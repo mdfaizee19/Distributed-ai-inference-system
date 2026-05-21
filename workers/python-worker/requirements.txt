@@ -1,0 +1,3 @@
+# Python dependencies for the private Python worker.
+Flask
+requests

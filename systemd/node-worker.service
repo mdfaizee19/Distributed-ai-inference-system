@@ -1,0 +1,12 @@
+[Unit]
+Description=Node.js Inference Worker Service
+After=network.target
+
+[Service]
+# Placeholder for Node.js worker service definition
+# ExecStart=/usr/bin/node /opt/distributed-ai-inference-system/workers/node-worker/worker.js
+Restart=always
+User=ubuntu
+
+[Install]
+WantedBy=multi-user.target

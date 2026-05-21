@@ -1,0 +1,12 @@
+[Unit]
+Description=API Gateway Service for Distributed AI Inference
+After=network.target
+
+[Service]
+# Placeholder for API service definition
+# ExecStart=/usr/bin/python3 /opt/distributed-ai-inference-system/api/app.py
+Restart=always
+User=ubuntu
+
+[Install]
+WantedBy=multi-user.target

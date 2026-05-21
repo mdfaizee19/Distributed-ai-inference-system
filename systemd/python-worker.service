@@ -1,0 +1,12 @@
+[Unit]
+Description=Python Inference Worker Service
+After=network.target
+
+[Service]
+# Placeholder for Python worker service definition
+# ExecStart=/usr/bin/python3 /opt/distributed-ai-inference-system/workers/python-worker/worker.py
+Restart=always
+User=ubuntu
+
+[Install]
+WantedBy=multi-user.target
