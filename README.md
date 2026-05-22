@@ -5,6 +5,10 @@
 Distributed inference mesh deployed on Google Cloud Platform using Terraform, private VPC networking, internal worker communication, and a public JSON API gateway.
 
 ---
+
+# Documentation and Technical writeup
+Documentation : [link]([url](https://medium.com/@mohamedfaizee19/how-i-built-a-distributed-inference-alchemyst-ai-devops-project-documentation-bf8fe3a8ae0b))
+
 # Assignment Context
 
 This project was specifically developed for the DevOps Intern Assignment at Alchemyst AI.
