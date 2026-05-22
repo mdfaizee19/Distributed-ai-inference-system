@@ -28,7 +28,7 @@ This project demonstrates a distributed inference architecture where:
 - Infrastructure is fully reproducible using Terraform
 - Services are managed using systemd
 - For simplicity, Flask’s built-in development server was used during this assignment. In production, the API gateway and workers would be deployed behind Gunicorn/Nginx or Kubernetes ingress controllers.
-- - The Node Worker VM is provisioned as part of the distributed worker topology and reserved for future horizontal expansion of the inference mesh.
+- The Node Worker VM is provisioned as part of the distributed worker topology and reserved for future horizontal expansion of the inference mesh.
 
 The system follows a lightweight RPC-style communication model between the gateway and internal workers.
 
