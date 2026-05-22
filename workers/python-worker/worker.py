@@ -16,6 +16,21 @@ def health():
         'component': 'python-worker'
     })
 
+@app.route('/infer', methods=['POST'])
+def infer():
+    if not request.is_json:
+        return jsonify({'error': 'JSON payload required'}), 400
+
+    payload = request.get_json()
+    input_text = payload.get('input')
+    if not input_text:
+        return jsonify({'error': 'input field is required'}), 400
+
+    return jsonify({
+        'worker': 'python-worker',
+        'result': f'processed: {input_text}'
+    })
+
 @app.route('/process', methods=['POST'])
 def process():
     if not request.is_json:

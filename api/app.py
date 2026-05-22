@@ -8,7 +8,7 @@ from flask import Flask, request, jsonify
 import requests
 
 app = Flask(__name__)
-PY_WORKER_URL = 'http://127.0.0.1:5001/process'
+PY_WORKER_URL = 'http://10.0.1.9:5001/infer'
 
 @app.route('/health')
 def health():
@@ -23,12 +23,12 @@ def infer():
         return jsonify({'error': 'JSON payload required'}), 400
 
     payload = request.get_json()
-    prompt = payload.get('prompt')
-    if not prompt:
-        return jsonify({'error': 'prompt field is required'}), 400
+    input_text = payload.get('input')
+    if not input_text:
+        return jsonify({'error': 'input field is required'}), 400
 
     try:
-        response = requests.post(PY_WORKER_URL, json={'prompt': prompt}, timeout=5)
+        response = requests.post(PY_WORKER_URL, json={'input': input_text}, timeout=5)
         response.raise_for_status()
         return jsonify(response.json()), response.status_code
     except requests.RequestException as exc:

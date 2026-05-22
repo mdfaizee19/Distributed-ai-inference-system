@@ -1,5 +1,5 @@
-# Main Terraform configuration for GCP infrastructure.
-# Defines VPC, subnet, firewall, and compute instance provisioning.
+// Main Terraform configuration for GCP infrastructure. (lf-normalized)
+// Defines VPC, subnet, firewall, and compute instance provisioning.
 
 resource "google_compute_network" "private_vpc" {
   name                    = "${var.project_id}-vpc"
@@ -47,9 +47,25 @@ resource "google_compute_firewall" "allow_internal_worker" {
     ports    = ["5000-5010"]
   }
 
-  # Restrict to the explicitly defined subnets instead of a /16.
   source_ranges = [google_compute_subnetwork.public_api_subnet.ip_cidr_range, google_compute_subnetwork.private_worker_subnet.ip_cidr_range]
   target_tags   = ["worker"]
+}
+
+resource "google_compute_firewall" "allow_ssh" {
+  name    = "${var.project_id}-allow-ssh"
+  network = google_compute_network.private_vpc.name
+
+  allow {
+    protocol = "tcp"
+    ports    = ["22"]
+  }
+
+  source_ranges = ["0.0.0.0/0"]
+
+  target_tags = [
+    "api-gateway",
+    "worker"
+  ]
 }
 
 resource "google_compute_instance" "api_gateway" {
@@ -67,9 +83,7 @@ resource "google_compute_instance" "api_gateway" {
   network_interface {
     network    = google_compute_network.private_vpc.id
     subnetwork = google_compute_subnetwork.public_api_subnet.id
-    access_config {
-      # Public external IP for the API gateway VM.
-    }
+    access_config {}
   }
 
   service_account {
@@ -92,10 +106,12 @@ resource "google_compute_instance" "api_gateway" {
         git clone "$REPO_URL" /opt/distributed-ai-inference-system || true
       fi
 
-      # Install API dependencies if present
+      # Install API dependencies inside venv if present
       if [ -f /opt/distributed-ai-inference-system/api/requirements.txt ]; then
-        pip3 install --upgrade pip
-        pip3 install -r /opt/distributed-ai-inference-system/api/requirements.txt
+        python3 -m venv /opt/api-venv || true
+        source /opt/api-venv/bin/activate || true
+        pip install --upgrade pip
+        pip install -r /opt/distributed-ai-inference-system/api/requirements.txt
       fi
 
       # Create a simple systemd unit
@@ -106,7 +122,7 @@ resource "google_compute_instance" "api_gateway" {
 
       [Service]
       Type=simple
-      ExecStart=/usr/bin/python3 /opt/distributed-ai-inference-system/api/app.py
+      ExecStart=/opt/api-venv/bin/python /opt/distributed-ai-inference-system/api/app.py
       Restart=always
       User=root
 
@@ -134,9 +150,8 @@ resource "google_compute_instance" "python_worker" {
   }
 
   network_interface {
-    network    = google_compute_network.private_vpc.id
     subnetwork = google_compute_subnetwork.private_worker_subnet.id
-    # No access_config block means no external IP on worker VMs.
+    access_config {}
   }
 
   service_account {
@@ -149,37 +164,41 @@ resource "google_compute_instance" "python_worker" {
     startup-script = <<-EOT
       #!/bin/bash
       set -e
-      REPO_URL="${var.repo_url}"
+
+      REPO_URL="https://github.com/mdfaizee19/Distributed-ai-inference-system.git"
+
       apt-get update -y
-      apt-get install -y python3 python3-pip git
+      apt-get install -y python3 python3-pip python3-venv git
 
-      if [ -n "$REPO_URL" ] && [ ! -d /opt/distributed-ai-inference-system ]; then
-        git clone "$REPO_URL" /opt/distributed-ai-inference-system || true
-      fi
+      git clone "$REPO_URL" /opt/distributed-ai-inference-system || true
 
-      if [ -f /opt/distributed-ai-inference-system/workers/python-worker/requirements.txt ]; then
-        pip3 install --upgrade pip
-        pip3 install -r /opt/distributed-ai-inference-system/workers/python-worker/requirements.txt
-      fi
+      python3 -m venv /opt/python-worker-venv
 
-      cat > /etc/systemd/system/python-worker.service <<-UNIT
-      [Unit]
-      Description=Python Worker Service
-      After=network.target
+      source /opt/python-worker-venv/bin/activate
 
-      [Service]
-      Type=simple
-      ExecStart=/usr/bin/python3 /opt/distributed-ai-inference-system/workers/python-worker/worker.py
-      Restart=always
-      User=root
+      pip install --upgrade pip
 
-      [Install]
-      WantedBy=multi-user.target
-      UNIT
+      pip install -r /opt/distributed-ai-inference-system/workers/python-worker/requirements.txt
+
+      cat > /etc/systemd/system/python-worker.service <<EOF
+[Unit]
+Description=Python Worker Service
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/opt/python-worker-venv/bin/python /opt/distributed-ai-inference-system/workers/python-worker/worker.py
+WorkingDirectory=/opt/distributed-ai-inference-system/workers/python-worker
+Restart=always
+User=root
+
+[Install]
+WantedBy=multi-user.target
+EOF
 
       systemctl daemon-reload
       systemctl enable python-worker.service
-      systemctl restart python-worker.service || true
+      systemctl restart python-worker.service
     EOT
   }
 }
@@ -197,9 +216,8 @@ resource "google_compute_instance" "node_worker" {
   }
 
   network_interface {
-    network    = google_compute_network.private_vpc.id
     subnetwork = google_compute_subnetwork.private_worker_subnet.id
-    # No external IP for private internal-only Node.js worker.
+    access_config {}
   }
 
   service_account {
