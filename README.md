@@ -1,6 +1,6 @@
 <img width="2062" height="763" alt="image" src="https://github.com/user-attachments/assets/72f8ac6e-2c40-4740-9168-96dadca7c7e8" />
 
-# Distributed Inference Mesh
+# DISTRIBUTED INFERENCE SYSTEM
 
 Distributed inference mesh deployed on Google Cloud Platform using Terraform, private VPC networking, internal worker communication, and a public JSON API gateway.
 
